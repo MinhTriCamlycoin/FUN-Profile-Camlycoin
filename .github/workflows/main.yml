@@ -1,8 +1,9 @@
-name: Deploy to iNet Hosting
+name: Deploy FUN.RICH to iNet
 
 on:
   push:
-    branches: [ main ]    # hoặc master
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -10,17 +11,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Project (nếu cần)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build
         run: |
           npm install --legacy-peer-deps
           npm run build
 
-      - name: Deploy via FTP
+      - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}      # ví dụ: nethost-5411.inet.vn
-          username: ${{ secrets.FTP_USERNAME }}  # username cPanel của con
-          password: ${{ secrets.FTP_PASSWORD }}  # password cPanel
-          local-dir: ./dist/                     # hoặc ./build/ nếu dùng khác
-          server-dir: /public_html/              # đúng thư mục fun.rich
-          dangerous-clean-slate: true            # xóa hết rồi up mới (khuyên dùng)
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          protocol: ftp
+          local-dir: ./dist/
+          server-dir: /public_html/
+          dangerous-clean-slate: true
+          passive: true
+          exclude: |
+            **/.git*
+            **/node_modules/**
