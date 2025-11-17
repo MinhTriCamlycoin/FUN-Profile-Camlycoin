@@ -4,7 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Trash2, Share2, MessageCircle, Repeat2, Pencil } from 'lucide-react';
+import { Heart, Trash2, Share2, MessageCircle, Pencil } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentSection } from './CommentSection';
@@ -40,6 +46,19 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
   const [commentCount, setCommentCount] = useState(post.comments.length);
   const [showComments, setShowComments] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [shareCount, setShareCount] = useState(0);
+
+  // Fetch share count
+  useState(() => {
+    const fetchShareCount = async () => {
+      const { count } = await supabase
+        .from('shared_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('original_post_id', post.id);
+      setShareCount(count || 0);
+    };
+    fetchShareCount();
+  });
 
   const handleLike = async () => {
     try {
@@ -74,13 +93,18 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
     }
   };
 
-  const handleShare = () => {
+  const handleCopyLink = () => {
     const url = `${window.location.origin}/post/${post.id}`;
     navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard!');
+    toast.success('Đã sao chép link!');
   };
 
-  const handleRepost = async () => {
+  const handleShareToProfile = async () => {
+    if (!currentUserId) {
+      toast.error('Vui lòng đăng nhập để share post');
+      return;
+    }
+
     try {
       const { error } = await supabase.from('shared_posts').insert({
         user_id: currentUserId,
@@ -88,9 +112,10 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
       });
 
       if (error) throw error;
-      toast.success('Post shared to your profile!');
+      setShareCount(prev => prev + 1);
+      toast.success('Đã share post về profile của bạn!');
     } catch (error: any) {
-      toast.error('Failed to share post');
+      toast.error('Không thể share post');
     }
   };
 
@@ -169,15 +194,26 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
               <span className="hidden sm:inline">{commentCount}</span>
               <span className="sm:hidden">{commentCount}</span>
             </Button>
-            {post.user_id !== currentUserId && (
-              <Button variant="ghost" size="sm" onClick={handleRepost} className="text-xs sm:text-sm">
-                <Repeat2 className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={handleShare} className="text-xs sm:text-sm">
-              <Share2 className="w-4 h-4" />
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                  <Share2 className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">{shareCount}</span>
+                  <span className="sm:hidden">{shareCount}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  Sao chép link
+                </DropdownMenuItem>
+                {currentUserId && post.user_id !== currentUserId && (
+                  <DropdownMenuItem onClick={handleShareToProfile}>
+                    Share về profile
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {post.user_id === currentUserId && (
               <>
                 <Button variant="ghost" size="sm" onClick={() => setShowEditDialog(true)} className="text-xs sm:text-sm">
