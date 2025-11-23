@@ -83,15 +83,15 @@ export const Navbar = () => {
           <SearchDialog />
           <NotificationDropdown />
           <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={toggleDarkMode}>
-            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {darkMode ? <Sun className="w-4 h-4 text-gold drop-shadow-[0_0_6px_hsl(var(--gold-glow))]" /> : <Moon className="w-4 h-4 text-gold drop-shadow-[0_0_6px_hsl(var(--gold-glow))]" />}
           </Button>
           {isLoggedIn ? (
-            <Button variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-10 text-primary-dark font-semibold hover:text-primary" onClick={handleLogout}>
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-10 text-primary-dark font-semibold hover:text-white hover:bg-primary [&:hover_svg]:text-white" onClick={handleLogout}>
               <LogOut className="w-4 h-4 sm:mr-2 text-gold drop-shadow-[0_0_6px_hsl(var(--gold-glow))]" />
               <span className="hidden sm:inline">Logout</span>
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-10 text-primary-dark font-semibold hover:text-primary" onClick={handleLogin}>
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-10 text-primary-dark font-semibold hover:text-white hover:bg-primary [&:hover_svg]:text-white" onClick={handleLogin}>
               <LogIn className="w-4 h-4 sm:mr-2 text-gold drop-shadow-[0_0_6px_hsl(var(--gold-glow))]" />
               <span className="hidden sm:inline">Login</span>
             </Button>
