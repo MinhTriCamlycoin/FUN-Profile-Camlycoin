@@ -68,7 +68,7 @@ export const SearchDialog = () => {
         if (user) {
           await supabase.from('search_logs').insert({
             user_id: user.id,
-            search_query: debouncedQuery
+            query: debouncedQuery
           });
         }
 

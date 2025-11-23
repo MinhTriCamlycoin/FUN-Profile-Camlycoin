@@ -71,7 +71,7 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
       const { count: sharesCount } = await supabase
         .from('shared_posts')
         .select('*', { count: 'exact', head: true })
-        .eq('original_post_id', post.id);
+        .eq('post_id', post.id);
       
       setShareCount(sharesCount || 0);
     };
@@ -131,7 +131,7 @@ export const PostCard = ({ post, currentUserId, onPostDeleted }: PostCardProps) 
     try {
       const { error } = await supabase.from('shared_posts').insert({
         user_id: currentUserId,
-        original_post_id: post.id,
+        post_id: post.id,
       });
 
       if (error) throw error;

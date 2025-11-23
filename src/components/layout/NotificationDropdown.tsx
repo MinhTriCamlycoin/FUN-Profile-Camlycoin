@@ -62,8 +62,8 @@ export const NotificationDropdown = () => {
         type,
         read,
         created_at,
-        post_id,
-        actor:actor_id (
+        related_post_id,
+        actor:related_user_id (
           username,
           avatar_url
         )
