@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUp, MessageCircle, Star, Users, Wallet, Coins } from 'lucide-react';
-import { useMultiChainBalance } from '@/hooks/useMultiChainBalance';
+import { ArrowUp, MessageCircle, Star, Users, Coins, Share2, DollarSign } from 'lucide-react';
 import { useWalletRewards } from '@/hooks/useWalletRewards';
-import { WalletConfetti } from '@/components/wallet/WalletConfetti';
-import { WalletConnect } from '@/components/wallet/WalletConnect';
 
 interface UserStats {
   posts_count: number;
   comments_count: number;
   reactions_count: number;
   friends_count: number;
+  shares_count: number;
   total_reward: number;
 }
 
@@ -24,39 +21,20 @@ interface ProfileHonorBoardProps {
 }
 
 export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorBoardProps) => {
-  const { address, isConnected } = useAccount();
-  const balances = useMultiChainBalance();
   const rewards = useWalletRewards();
   const [stats, setStats] = useState<UserStats>({
     posts_count: 0,
     comments_count: 0,
     reactions_count: 0,
     friends_count: 0,
+    shares_count: 0,
     total_reward: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [prevTotalBalance, setPrevTotalBalance] = useState(0);
 
   useEffect(() => {
     fetchUserStats();
   }, [userId]);
-
-  // Confetti effect on balance increase
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const walletBalance = parseFloat(balances.bnb) + parseFloat(balances.usdt) + parseFloat(balances.camly) + parseFloat(balances.btc);
-    const rewardBalance = parseFloat(rewards.bnb) + parseFloat(rewards.usdt) + parseFloat(rewards.camly) + parseFloat(rewards.btc);
-    const totalBalance = walletBalance + rewardBalance;
-
-    if (prevTotalBalance > 0 && totalBalance > prevTotalBalance) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 100);
-    }
-
-    setPrevTotalBalance(totalBalance);
-  }, [balances, rewards, isConnected]);
 
   const fetchUserStats = async () => {
     try {
@@ -127,6 +105,7 @@ export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorB
         comments_count: commentsCount || 0,
         reactions_count: reactionsCount || 0,
         friends_count: friendsCount || 0,
+        shares_count: sharedCount || 0,
         total_reward: totalReward,
       });
     } catch (error) {
@@ -137,13 +116,8 @@ export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorB
   };
 
   if (loading) {
-    return <Skeleton className="h-[600px] w-full" />;
+    return <Skeleton className="h-[500px] w-full" />;
   }
-
-  const totalWalletCamly = (parseFloat(balances.camly) + parseFloat(rewards.camly)).toFixed(0);
-  const totalWalletBnb = (parseFloat(balances.bnb) + parseFloat(rewards.bnb)).toFixed(4);
-  const totalWalletUsdt = (parseFloat(balances.usdt) + parseFloat(rewards.usdt)).toFixed(2);
-  const totalWalletBtc = (parseFloat(balances.btc) + parseFloat(balances.btcNetwork) + parseFloat(rewards.btc)).toFixed(8);
 
   const StatRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) => (
     <div className="relative border border-gold/50 rounded-lg p-2 bg-gradient-to-r from-primary/20 to-primary-dark/20 backdrop-blur-sm">
@@ -159,30 +133,18 @@ export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorB
     </div>
   );
 
-  const WalletRow = ({ icon, label, value, symbol, glow }: { icon: React.ReactNode; label: string; value: string; symbol: string; glow?: boolean }) => (
-    <div className={`relative border rounded-lg p-2 backdrop-blur-sm transition-all ${
-      glow 
-        ? 'border-gold bg-gradient-to-r from-gold/20 to-gold-glow/20 shadow-[0_0_20px_hsl(var(--gold-glow)/0.5)] animate-pulse' 
-        : 'border-gold/50 bg-gradient-to-r from-primary/20 to-primary-dark/20'
-    }`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="text-gold">
-            {icon}
-          </div>
-          <span className="text-gold font-bold text-xs uppercase tracking-wide">{label}</span>
-        </div>
-        <div className="text-right">
-          <span className="text-white font-bold text-sm">{parseFloat(value).toLocaleString()}</span>
-          <span className="text-gold-glow text-xs ml-1">{symbol}</span>
-        </div>
+  const MoneyRow = ({ label, value, symbol }: { label: string; value: string; symbol: string }) => (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-gold/80">{label}:</span>
+      <div className="text-right">
+        <span className="text-white font-bold">{parseFloat(value).toLocaleString()}</span>
+        <span className="text-gold-glow text-xs ml-1">{symbol}</span>
       </div>
     </div>
   );
 
 return (
     <div className="sticky top-20 rounded-2xl overflow-hidden border-2 border-gold bg-gradient-to-br from-primary via-primary-dark to-primary-dark shadow-[0_0_60px_hsl(var(--gold-glow)/0.4)]">
-      <WalletConfetti show={showConfetti} />
       {/* Golden sparkle effects */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-2 left-2 w-1.5 h-1.5 bg-gold-glow rounded-full animate-pulse"></div>
@@ -223,63 +185,6 @@ return (
           </h1>
         </div>
 
-        {/* Wallet Connection */}
-        {!isConnected && (
-          <div className="mb-3">
-            <WalletConnect />
-          </div>
-        )}
-
-        {/* Multi-Chain Wallet Balance */}
-        {isConnected && (
-          <div className="mb-3 space-y-2">
-            <div className="text-center">
-              <h3 className="text-gold-glow text-sm font-bold tracking-wider mb-1 flex items-center justify-center gap-2">
-                <Wallet className="w-4 h-4" />
-                TOTAL WALLET BALANCE
-              </h3>
-              <div className="text-[10px] text-gold/70 font-medium">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </div>
-            </div>
-            
-            <div className="space-y-1.5">
-              <WalletRow 
-                icon={<Coins className="w-4 h-4" />}
-                label="CAMLY"
-                value={totalWalletCamly}
-                symbol="C"
-                glow={parseFloat(totalWalletCamly) >= 1000000}
-              />
-              <WalletRow 
-                icon={<Coins className="w-4 h-4" />}
-                label="BNB"
-                value={totalWalletBnb}
-                symbol="BNB"
-                glow={parseFloat(totalWalletBnb) >= 0.1}
-              />
-              <WalletRow 
-                icon={<Coins className="w-4 h-4" />}
-                label="USDT"
-                value={totalWalletUsdt}
-                symbol="USDT"
-                glow={parseFloat(totalWalletUsdt) >= 100}
-              />
-              <WalletRow 
-                icon={<Coins className="w-4 h-4" />}
-                label="BTC"
-                value={totalWalletBtc}
-                symbol="BTC"
-                glow={parseFloat(totalWalletBtc) >= 0.001}
-              />
-            </div>
-
-            <div className="text-center text-[10px] text-gold/60 pt-1">
-              🔄 Real-time • Multi-chain (BSC + Bitcoin)
-            </div>
-          </div>
-        )}
-
         {/* Social Stats */}
         <div className="space-y-2">
           <h3 className="text-gold-glow text-xs font-bold tracking-wider text-center mb-1">
@@ -301,15 +206,37 @@ return (
             value={stats.reactions_count}
           />
           <StatRow 
+            icon={<Share2 className="w-4 h-4" />}
+            label="SHARES"
+            value={stats.shares_count}
+          />
+          <StatRow 
             icon={<Users className="w-4 h-4" />}
             label="FRIENDS"
             value={stats.friends_count}
           />
           <StatRow 
             icon={<Coins className="w-4 h-4" />}
-            label="SOCIAL REWARD"
+            label="REWARD"
             value={stats.total_reward}
           />
+        </div>
+
+        {/* Total Money Received */}
+        <div className="mt-3 pt-3 border-t border-gold/30 space-y-2">
+          <h3 className="text-gold-glow text-xs font-bold tracking-wider text-center mb-2 flex items-center justify-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            TOTAL MONEY
+          </h3>
+          <div className="space-y-1.5 bg-gradient-to-r from-primary/20 to-primary-dark/20 border border-gold/50 rounded-lg p-2">
+            <MoneyRow label="CAMLY" value={rewards.camly} symbol="C" />
+            <MoneyRow label="BNB" value={rewards.bnb} symbol="BNB" />
+            <MoneyRow label="USDT" value={rewards.usdt} symbol="USDT" />
+            <MoneyRow label="BTC" value={rewards.btc} symbol="BTC" />
+          </div>
+          <div className="text-center text-[10px] text-gold/60">
+            💰 Rewards + Transactions
+          </div>
         </div>
       </div>
     </div>
