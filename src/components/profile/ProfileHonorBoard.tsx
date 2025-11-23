@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUp, MessageCircle, Star, Users, BadgeDollarSign } from 'lucide-react';
+import { ArrowUp, MessageCircle, Star, Users, Wallet, Coins } from 'lucide-react';
+import { useMultiChainBalance } from '@/hooks/useMultiChainBalance';
+import { useWalletRewards } from '@/hooks/useWalletRewards';
+import { WalletConfetti } from '@/components/wallet/WalletConfetti';
+import { WalletConnect } from '@/components/wallet/WalletConnect';
 
 interface UserStats {
   posts_count: number;
@@ -19,6 +24,9 @@ interface ProfileHonorBoardProps {
 }
 
 export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorBoardProps) => {
+  const { address, isConnected } = useAccount();
+  const balances = useMultiChainBalance();
+  const rewards = useWalletRewards();
   const [stats, setStats] = useState<UserStats>({
     posts_count: 0,
     comments_count: 0,
@@ -27,10 +35,28 @@ export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorB
     total_reward: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [prevTotalBalance, setPrevTotalBalance] = useState(0);
 
   useEffect(() => {
     fetchUserStats();
   }, [userId]);
+
+  // Confetti effect on balance increase
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const walletBalance = parseFloat(balances.bnb) + parseFloat(balances.usdt) + parseFloat(balances.camly) + parseFloat(balances.btc);
+    const rewardBalance = parseFloat(rewards.bnb) + parseFloat(rewards.usdt) + parseFloat(rewards.camly) + parseFloat(rewards.btc);
+    const totalBalance = walletBalance + rewardBalance;
+
+    if (prevTotalBalance > 0 && totalBalance > prevTotalBalance) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 100);
+    }
+
+    setPrevTotalBalance(totalBalance);
+  }, [balances, rewards, isConnected]);
 
   const fetchUserStats = async () => {
     try {
@@ -111,31 +137,60 @@ export const ProfileHonorBoard = ({ userId, username, avatarUrl }: ProfileHonorB
   };
 
   if (loading) {
-    return <Skeleton className="h-[450px] w-full" />;
+    return <Skeleton className="h-[600px] w-full" />;
   }
 
+  const totalWalletCamly = (parseFloat(balances.camly) + parseFloat(rewards.camly)).toFixed(0);
+  const totalWalletBnb = (parseFloat(balances.bnb) + parseFloat(rewards.bnb)).toFixed(4);
+  const totalWalletUsdt = (parseFloat(balances.usdt) + parseFloat(rewards.usdt)).toFixed(2);
+  const totalWalletBtc = (parseFloat(balances.btc) + parseFloat(balances.btcNetwork) + parseFloat(rewards.btc)).toFixed(8);
+
   const StatRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) => (
-    <div className="relative border border-yellow-500 rounded-lg p-2 bg-gradient-to-r from-green-800/50 to-green-700/50 backdrop-blur-sm">
+    <div className="relative border border-gold/50 rounded-lg p-2 bg-gradient-to-r from-primary/20 to-primary-dark/20 backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="text-yellow-400">
+          <div className="text-gold">
             {icon}
           </div>
-          <span className="text-yellow-400 font-bold text-sm uppercase tracking-wide">{label}</span>
+          <span className="text-gold font-bold text-xs uppercase tracking-wide">{label}</span>
         </div>
-        <span className="text-white font-bold text-lg">{value.toLocaleString()}</span>
+        <span className="text-white font-bold text-sm">{value.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+
+  const WalletRow = ({ icon, label, value, symbol, glow }: { icon: React.ReactNode; label: string; value: string; symbol: string; glow?: boolean }) => (
+    <div className={`relative border rounded-lg p-2 backdrop-blur-sm transition-all ${
+      glow 
+        ? 'border-gold bg-gradient-to-r from-gold/20 to-gold-glow/20 shadow-[0_0_20px_hsl(var(--gold-glow)/0.5)] animate-pulse' 
+        : 'border-gold/50 bg-gradient-to-r from-primary/20 to-primary-dark/20'
+    }`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="text-gold">
+            {icon}
+          </div>
+          <span className="text-gold font-bold text-xs uppercase tracking-wide">{label}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-white font-bold text-sm">{parseFloat(value).toLocaleString()}</span>
+          <span className="text-gold-glow text-xs ml-1">{symbol}</span>
+        </div>
       </div>
     </div>
   );
 
 return (
-    <div className="sticky top-20 rounded-2xl overflow-hidden border-2 border-yellow-500 bg-gradient-to-br from-green-600 via-green-700 to-green-800 shadow-xl">
-      {/* Sparkle effects */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="absolute top-2 left-2 w-1 h-1 bg-white rounded-full animate-pulse"></div>
-        <div className="absolute top-4 right-4 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-        <div className="absolute bottom-6 left-6 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-4 right-8 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+    <div className="sticky top-20 rounded-2xl overflow-hidden border-2 border-gold bg-gradient-to-br from-primary via-primary-dark to-primary-dark shadow-[0_0_60px_hsl(var(--gold-glow)/0.4)]">
+      <WalletConfetti show={showConfetti} />
+      {/* Golden sparkle effects */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-2 left-2 w-1.5 h-1.5 bg-gold-glow rounded-full animate-pulse"></div>
+        <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-gold-glow rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+        <div className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-gold-glow rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-4 right-8 w-1.5 h-1.5 bg-gold-glow rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+        <div className="absolute top-1/2 left-1/4 w-1 h-1 bg-gold rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-gold rounded-full animate-pulse" style={{ animationDelay: '0.8s' }}></div>
       </div>
 
       <div className="relative p-3 space-y-2">
@@ -143,10 +198,11 @@ return (
         <div className="text-center space-y-1">
           <div className="inline-block">
             <div className="relative">
+              <div className="absolute inset-0 bg-gold-glow rounded-full blur-xl opacity-50 animate-pulse"></div>
               <img 
                 src="/fun-profile-logo.jpg" 
                 alt="Fun Profile Web3"
-                className="w-12 h-12 mx-auto rounded-full border border-yellow-400 shadow-lg"
+                className="relative w-12 h-12 mx-auto rounded-full border-2 border-gold shadow-[0_0_20px_hsl(var(--gold-glow)/0.5)]"
               />
             </div>
           </div>
@@ -154,21 +210,81 @@ return (
           {/* User info */}
           <div className="flex items-center justify-center gap-2">
             <h2 className="text-white text-sm font-bold tracking-wide">{username?.toUpperCase() || 'USER'}</h2>
-            <Avatar className="w-8 h-8 border-2 border-yellow-400">
+            <Avatar className="w-8 h-8 border-2 border-gold">
               <AvatarImage src={avatarUrl} />
-              <AvatarFallback className="bg-yellow-500 text-black font-bold text-xs">
+              <AvatarFallback className="bg-gold text-black font-bold text-xs">
                 {username?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
           </div>
           
-          <h1 className="text-yellow-400 text-xl font-black tracking-wider drop-shadow-lg">
+          <h1 className="text-gold text-xl font-black tracking-wider drop-shadow-[0_0_10px_hsl(var(--gold-glow))]">
             HONOR BOARD
           </h1>
         </div>
 
-        {/* Stats */}
+        {/* Wallet Connection */}
+        {!isConnected && (
+          <div className="mb-3">
+            <WalletConnect />
+          </div>
+        )}
+
+        {/* Multi-Chain Wallet Balance */}
+        {isConnected && (
+          <div className="mb-3 space-y-2">
+            <div className="text-center">
+              <h3 className="text-gold-glow text-sm font-bold tracking-wider mb-1 flex items-center justify-center gap-2">
+                <Wallet className="w-4 h-4" />
+                TOTAL WALLET BALANCE
+              </h3>
+              <div className="text-[10px] text-gold/70 font-medium">
+                {address?.slice(0, 6)}...{address?.slice(-4)}
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <WalletRow 
+                icon={<Coins className="w-4 h-4" />}
+                label="CAMLY"
+                value={totalWalletCamly}
+                symbol="C"
+                glow={parseFloat(totalWalletCamly) >= 1000000}
+              />
+              <WalletRow 
+                icon={<Coins className="w-4 h-4" />}
+                label="BNB"
+                value={totalWalletBnb}
+                symbol="BNB"
+                glow={parseFloat(totalWalletBnb) >= 0.1}
+              />
+              <WalletRow 
+                icon={<Coins className="w-4 h-4" />}
+                label="USDT"
+                value={totalWalletUsdt}
+                symbol="USDT"
+                glow={parseFloat(totalWalletUsdt) >= 100}
+              />
+              <WalletRow 
+                icon={<Coins className="w-4 h-4" />}
+                label="BTC"
+                value={totalWalletBtc}
+                symbol="BTC"
+                glow={parseFloat(totalWalletBtc) >= 0.001}
+              />
+            </div>
+
+            <div className="text-center text-[10px] text-gold/60 pt-1">
+              🔄 Real-time • Multi-chain (BSC + Bitcoin)
+            </div>
+          </div>
+        )}
+
+        {/* Social Stats */}
         <div className="space-y-2">
+          <h3 className="text-gold-glow text-xs font-bold tracking-wider text-center mb-1">
+            SOCIAL ACTIVITY
+          </h3>
           <StatRow 
             icon={<ArrowUp className="w-4 h-4" />}
             label="POSTS"
@@ -190,8 +306,8 @@ return (
             value={stats.friends_count}
           />
           <StatRow 
-            icon={<BadgeDollarSign className="w-4 h-4" />}
-            label="TOTAL REWARD"
+            icon={<Coins className="w-4 h-4" />}
+            label="SOCIAL REWARD"
             value={stats.total_reward}
           />
         </div>
