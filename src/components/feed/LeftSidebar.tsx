@@ -9,19 +9,12 @@ export const LeftSidebar = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Info className="w-4 h-4 text-primary" />
-            Về FUN Profile
+            Về Camly Fun
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-3">
-          <p>✳️ F.U. Profile – Mạng Xã Hội Web3 Kết Hợp AI, Biến Mọi Thứ Thành Tài Sản Số</p>
-          <p>F.U. Profile là một mạng xã hội Web3 và còn là một nền tảng sáng tạo, lưu trữ và giao dịch tài sản số phi tập trung, nơi mọi thông tin, tài sản kỹ thuật số và giá trị cá nhân được bảo toàn vĩnh viễn trên blockchain.</p>
-          <p>…</p>
-          <a 
-            href="/about" 
-            className="inline-block text-primary hover:text-primary/80 font-medium text-sm underline underline-offset-2"
-          >
-            Xem tiếp
-          </a>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>Mạng xã hội kết nối cộng đồng crypto và blockchain.</p>
+          <p className="text-xs">Chia sẻ, tương tác và kiếm thưởng mỗi ngày!</p>
         </CardContent>
       </Card>
 
